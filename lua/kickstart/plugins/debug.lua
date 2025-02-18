@@ -29,26 +29,49 @@ return {
     {
       '<F5>',
       function()
-        require('dap').continue()
+        local dap = require 'dap'
+        if dap.session() then
+          dap.continue()
+        else
+          local configs = dap.configurations[vim.bo.filetype]
+          if configs and #configs > 0 then
+            dap.run(configs[1])
+          else
+            vim.notify('No debug configuration found', vim.log.levels.WARN)
+          end
+        end
       end,
       desc = 'Debug: Start/Continue',
+      -- '<F5>',
+      -- function()
+      --   require('dap').continue()
+      -- end,
+      -- desc = 'Debug: Start/Continue',
     },
+    -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
     {
-      '<F1>',
+      '<F7>',
       function()
-        require('dap').step_into()
+        require('dapui').toggle()
       end,
-      desc = 'Debug: Step Into',
+      desc = 'Debug: See last session result.',
     },
     {
-      '<F2>',
+      '<F10>',
       function()
         require('dap').step_over()
       end,
       desc = 'Debug: Step Over',
     },
     {
-      '<F3>',
+      '<F11>',
+      function()
+        require('dap').step_into()
+      end,
+      desc = 'Debug: Step Into',
+    },
+    {
+      '<F12>',
       function()
         require('dap').step_out()
       end,
@@ -68,32 +91,19 @@ return {
       end,
       desc = 'Debug: Set Breakpoint',
     },
-    -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
-    {
-      '<F7>',
-      function()
-        require('dapui').toggle()
-      end,
-      desc = 'Debug: See last session result.',
-    },
   },
   config = function()
     local dap = require 'dap'
     local dapui = require 'dapui'
 
     require('mason-nvim-dap').setup {
-      -- Makes a best effort to setup the various debuggers with
-      -- reasonable debug configurations
       automatic_installation = true,
-
       -- You can provide additional configuration to the handlers,
       -- see mason-nvim-dap README for more information
       handlers = {},
-
       -- You'll need to check that you have the required things installed
       -- online, please don't ask me how to install them :)
       ensure_installed = {
-        -- Update this to ensure that you have the debuggers for the langs you want
         'delve',
       },
     }
