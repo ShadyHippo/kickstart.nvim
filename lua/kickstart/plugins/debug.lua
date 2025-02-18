@@ -1,18 +1,11 @@
--- debug.lua
---
--- Shows how to use the DAP plugin to debug your code.
---
--- Primarily focused on configuring the debugger for Go, but can
--- be extended to other languages as well. That's why it's called
--- kickstart.nvim and not kitchen-sink.nvim ;)
-
 return {
-  -- NOTE: Yes, you can install new plugins here!
   'mfussenegger/nvim-dap',
-  -- NOTE: And you can specify dependencies as well
   dependencies = {
     -- Creates a beautiful debugger UI
     'rcarriga/nvim-dap-ui',
+
+    -- Virtual text provider
+    'theHamsta/nvim-dap-virtual-text',
 
     -- Required dependency for nvim-dap-ui
     'nvim-neotest/nvim-nio',
@@ -42,13 +35,7 @@ return {
         end
       end,
       desc = 'Debug: Start/Continue',
-      -- '<F5>',
-      -- function()
-      --   require('dap').continue()
-      -- end,
-      -- desc = 'Debug: Start/Continue',
     },
-    -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
     {
       '<F7>',
       function()
@@ -130,6 +117,8 @@ return {
       },
     }
 
+    require('nvim-dap-virtual-text').setup {}
+
     -- Change breakpoint icons
     -- vim.api.nvim_set_hl(0, 'DapBreak', { fg = '#e51400' })
     -- vim.api.nvim_set_hl(0, 'DapStop', { fg = '#ffcc00' })
@@ -146,13 +135,64 @@ return {
     dap.listeners.before.event_terminated['dapui_config'] = dapui.close
     dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
+    dap.configurations.go = {
+      {
+        type = 'delve',
+        name = 'file',
+        request = 'launch',
+        program = vim.fn.getcwd() .. '/main.go',
+        outputMode = 'remote',
+      },
+    }
     -- Install golang specific config
     require('dap-go').setup {
       delve = {
-        -- On Windows delve must be run attached or it crashes.
-        -- See https://github.com/leoluz/nvim-dap-go/blob/main/README.md#configuring
         detached = vim.fn.has 'win32' == 0,
       },
     }
+
+    -- vim.api.nvim_create_autocmd('BufWinEnter', {
+    --   pattern = 'DAP REPL',
+    --   callback = function()
+    --     vim.api.nvim_create_autocmd('TextChanged', {
+    --       buffer = 0,
+    --       callback = function()
+    --         vim.cmd 'normal! G'
+    --       end,
+    --     })
+    --   end,
+    -- })
+
+    -- local function resize_dap_repl()
+    --   local repl_win = vim.fn.bufwinid 'DAP REPL'
+    --   if repl_win ~= -1 then
+    --     vim.api.nvim_win_set_height(repl_win, math.max(5, vim.api.nvim_win_get_height(repl_win)))
+    --   end
+    -- end
+    --
+    -- -- Automatically resize REPL when it opens
+    -- dap.listeners.after.event_initialized['dap_repl_resize'] = function()
+    --   vim.defer_fn(resize_dap_repl, 50) -- Slight delay to ensure it's applied
+    -- end
+
+    -- -- Function to scroll REPL to bottom
+    -- local function scroll_repl()
+    --   local repl_bufnr = vim.fn.bufnr 'DAP REPL'
+    --   if repl_bufnr ~= -1 then
+    --     vim.api.nvim_buf_call(repl_bufnr, function()
+    --       vim.cmd 'normal! G'
+    --     end)
+    --   end
+    -- end
+    --
+    -- -- Automatically scroll REPL when output is received
+    -- dap.listeners.after.event_output['dap_repl_scroll'] = function()
+    --   vim.defer_fn(scroll_repl, 10)
+    -- end
+    --
+    -- -- Automatically scroll REPL when stepping through code
+    -- dap.listeners.after.event_stopped['dap_repl_scroll'] = function()
+    --   vim.defer_fn(scroll_repl, 10)
+    -- end
   end,
 }
