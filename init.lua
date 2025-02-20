@@ -101,7 +101,23 @@ vim.keymap.set('n', '<C-y>', '5<C-y>', { desc = 'Scroll down' })
 vim.keymap.set('v', '<C-y>', '5<C-y>', { desc = 'Scroll down' })
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>q', function()
+  vim.diagnostic.setqflist()
+  vim.api.nvim_command ':cclose'
+  vim.api.nvim_command ':cnext'
+  vim.api.nvim_command ':cprev'
+end, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>Q', function()
+  vim.diagnostic.setloclist()
+  vim.api.nvim_command ':cclose'
+  vim.api.nvim_command ':cnext'
+  vim.api.nvim_command ':cprev'
+end, { desc = 'Open diagnostic [Q]uickfix list' })
+
+vim.keymap.set('n', '<A-u>', ':cnext<CR>', { desc = 'Go to the next quick fix' })
+vim.keymap.set('n', '<A-i>', ':cprev<CR>', { desc = 'Go to the next quick fix' })
+vim.keymap.set('n', '<A-o>', ':copen<CR>', { desc = 'Go to the next quick fix' })
+vim.keymap.set('n', '<A-p>', ':cclose<CR>', { desc = 'Go to the next quick fix' })
 
 -- Keybinds to make split navigation easier.
 --  See `:help wincmd` for a list of all window commands
@@ -121,14 +137,16 @@ vim.keymap.set('n', '<C-A-k>', '8<C-w>+', { desc = 'Increase window height' })
 -- vim.keymap.set('n', '<leader>j', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 -- vim.keymap.set('n', '<leader>k', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
-vim.keymap.set('n', '<C-S-_>', '<C-w>_', { desc = 'maximize current window width' })
-vim.keymap.set('n', '<C-S-|>', '<C-w>|', { desc = 'maximize window height' })
-vim.keymap.set('n', '<C-S-=>', '<C-w>=', { desc = 'equalize windows' })
+vim.keymap.set('n', '<C-A-_>', '<C-w>_', { desc = 'maximize current window width' })
+vim.keymap.set('n', '<C-A-|>', '<C-w>|', { desc = 'maximize window height' })
+vim.keymap.set('n', '<C-A-=>', '<C-w>=', { desc = 'equalize windows' })
 
 -- vim.keymap.set('n', '<leader>h', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 -- vim.keymap.set('n', '<leader>l', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 -- vim.keymap.set('n', '<leader>j', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 -- vim.keymap.set('n', '<leader>k', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+--
+--
 
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
