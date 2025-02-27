@@ -23,12 +23,10 @@ return {
       '<F5>',
       function()
         local dap = require 'dap'
-
-        vim.api.nvim_command ':w'
-
         if dap.session() then
           dap.continue()
         else
+          vim.api.nvim_command ':w'
           local configs = dap.configurations[vim.bo.filetype]
           if configs and #configs > 0 then
             dap.run(configs[1])
