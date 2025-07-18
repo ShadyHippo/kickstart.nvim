@@ -115,9 +115,9 @@ vim.keymap.set('n', '<leader>Q', function()
 end, { desc = 'Open diagnostic [Q]uickfix list' })
 
 vim.keymap.set('n', '<A-u>', ':cnext<CR>', { desc = 'Go to the next quick fix' })
-vim.keymap.set('n', '<A-i>', ':cprev<CR>', { desc = 'Go to the next quick fix' })
-vim.keymap.set('n', '<A-o>', ':copen<CR>', { desc = 'Go to the next quick fix' })
-vim.keymap.set('n', '<A-p>', ':cclose<CR>', { desc = 'Go to the next quick fix' })
+vim.keymap.set('n', '<A-i>', ':cprev<CR>', { desc = 'Go to the prev quick fix' })
+vim.keymap.set('n', '<A-o>', ':copen<CR>', { desc = 'Open quick fix' })
+vim.keymap.set('n', '<A-p>', ':cclose<CR>', { desc = 'Close quick fix' })
 
 -- Keybinds to make split navigation easier.
 --  See `:help wincmd` for a list of all window commands
@@ -190,6 +190,11 @@ vim.opt.rtp:prepend(lazypath)
 --  To update plugins you can run
 --    :Lazy update
 require('lazy').setup({
+  {
+    'vhyrro/luarocks.nvim',
+    priority = 1000, -- Very high priority is required, luarocks.nvim should run as the first plugin in your config.
+    config = true,
+  },
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
@@ -297,7 +302,7 @@ require('lazy').setup({
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
-    branch = '0.1.x',
+    branch = 'master',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -502,7 +507,7 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
@@ -854,7 +859,6 @@ require('lazy').setup({
   },
   {
     'smoka7/hop.nvim',
-    tag = '*', -- optional but strongly recommended
     config = function()
       -- you can configure Hop the way you like here; see :h hop-config
       require('hop').setup { keys = 'etovxqpdygfblzhckisuran' }

@@ -141,7 +141,8 @@ return {
         type = 'delve',
         name = 'file',
         request = 'launch',
-        program = vim.fn.getcwd() .. '/main.go',
+        program = vim.fn.getcwd(),
+        -- program = vim.fn.getcwd() .. '/main.go',
         outputMode = 'remote',
       },
     }
