@@ -136,13 +136,32 @@ return {
     dap.listeners.before.event_terminated['dapui_config'] = dapui.close
     dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
+    local function find_main_go_dir()
+      local Path = require 'plenary.path'
+      local current = Path:new(vim.api.nvim_buf_get_name(0)):parent()
+
+      while current do
+        local main_go = Path:new(current, 'main.go')
+        if main_go:exists() then
+          return current:absolute()
+        end
+        local parent = Path:new(current):parent()
+        if parent == current then
+          break
+        end
+        current = parent
+      end
+      error 'main.go not found in parents'
+    end
+
     dap.configurations.go = {
       {
         type = 'delve',
         name = 'file',
         request = 'launch',
-        program = vim.fn.getcwd(),
-        -- program = vim.fn.getcwd() .. '/main.go',
+        program = function()
+          return find_main_go_dir()
+        end,
         outputMode = 'remote',
       },
     }
