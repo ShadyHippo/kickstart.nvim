@@ -196,6 +196,25 @@ require('lazy').setup({
     config = true,
   },
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  {
+    'tpope/vim-dadbod', -- sqlite / db support
+    dependencies = {
+      'kristijanhusak/vim-dadbod-ui',
+      'kristijanhusak/vim-dadbod-completion',
+    },
+    init = function()
+      vim.g.dbs = {
+        acnh = 'sqlite:///home/hippo/acnh/acnh.db',
+      }
+
+      vim.g.db_ui_force_echo_notifications = 1
+      vim.g.db_ui_use_nerd_fonts = 1
+      vim.g.db_ui_save_location = vim.fn.stdpath 'config' .. '/db_queries'
+
+      vim.keymap.set('v', '<F5>', ':DB<CR>', { desc = 'Execute highlighted query' })
+      vim.keymap.set('n', '<F5>', ':DB<CR>', { desc = 'Execute hovered query' })
+    end,
+  },
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -463,7 +482,25 @@ require('lazy').setup({
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('<leader>rn', ':IncRename ', '[R]e[n]ame')
+          -- map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          -- vim.keymap.set('n', '<leader>rn', function()
+          --   local orig_ui_input = vim.ui.input
+          --
+          --   -- Override vim.ui.input to clear the pre-filled value
+          --   vim.ui.input = function(opts, on_confirm)
+          --     opts.default = '' -- override default input value
+          --     orig_ui_input(opts, on_confirm)
+          --   end
+          --
+          --   -- Call rename (uses our overridden input)
+          --   vim.lsp.buf.rename()
+          --
+          --   -- Restore original vim.ui.input after the call
+          --   vim.defer_fn(function()
+          --     vim.ui.input = orig_ui_input
+          --   end, 100)
+          -- end, { desc = '[R]e[n]ame with empty prompt' })
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
@@ -515,6 +552,28 @@ require('lazy').setup({
         end,
       })
 
+      -- Autocommand for SQL files to enable Dadbod completion
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = { 'sql', 'mysql', 'plsql' },
+        callback = function()
+          require('cmp').setup.buffer {
+            sources = {
+              { name = 'vim-dadbod-completion' },
+              { name = 'buffer' },
+            },
+          }
+          -- Look for the "-- db: name" comment in the first 5 lines
+          local lines = vim.api.nvim_buf_get_lines(0, 0, 5, false)
+          for _, line in ipairs(lines) do
+            local db_name = line:match '%-%-%s*db:%s*(%w+)'
+            if db_name and vim.g.dbs and vim.g.dbs[db_name] then
+              vim.b.db = vim.g.dbs[db_name]
+              return
+            end
+          end
+        end,
+      })
+
       -- Change diagnostic symbols in the sign column (gutter)
       -- if vim.g.have_nerd_font then
       local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
@@ -522,7 +581,17 @@ require('lazy').setup({
       for type, icon in pairs(signs) do
         diagnostic_signs[vim.diagnostic.severity[type]] = icon
       end
+      -- vim.diagnostic.config { virtual_text = false, virtual_lines = true, signs = { text = diagnostic_signs } }
       vim.diagnostic.config { signs = { text = diagnostic_signs } }
+      vim.api.nvim_create_autocmd('CursorHold', {
+        callback = function()
+          vim.diagnostic.open_float(nil, {
+            focusable = false,
+            border = 'rounded',
+            source = 'always',
+          })
+        end,
+      })
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -744,6 +813,7 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
+          { name = 'vim-dadbod-completion' },
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
@@ -758,6 +828,12 @@ require('lazy').setup({
     init = function()
       vim.o.background = 'dark'
       vim.cmd.colorscheme 'gruvbox'
+    end,
+  },
+  {
+    'smjonas/inc-rename.nvim',
+    config = function()
+      require('inc_rename').setup()
     end,
   },
 
@@ -799,11 +875,12 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'go', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'go', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'sql', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {

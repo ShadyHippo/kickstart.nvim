@@ -1,3 +1,19 @@
+local function is_in_go_runtime_or_cache()
+  local Path = require 'plenary.path'
+  local bufname = vim.api.nvim_buf_get_name(0)
+  local bufpath = Path:new(bufname):absolute()
+
+  -- Quick substring checks for common Go internals:
+  if bufpath:match '/go/pkg/mod/' or bufpath:match '/go/src/' or bufpath:match 'golang.org/toolchain' then
+    return true
+  end
+
+  -- Optional: deeper segment checks, if you want
+  -- (can be omitted if above works well)
+
+  return false
+end
+
 return {
   'mfussenegger/nvim-dap',
   dependencies = {
@@ -26,6 +42,11 @@ return {
         if dap.session() then
           dap.continue()
         else
+          if is_in_go_runtime_or_cache() then
+            vim.notify("don't do that", vim.log.levels.WARN)
+            return
+          end
+
           vim.api.nvim_command ':wall'
           local configs = dap.configurations[vim.bo.filetype]
           if configs and #configs > 0 then
@@ -36,6 +57,19 @@ return {
         end
       end,
       desc = 'Debug: Start/Continue',
+    },
+    {
+      '<F6>',
+      function()
+        local dap = require 'dap'
+        if dap.session() then
+          dap.terminate()
+          vim.notify('Debug session yeeted', vim.log.levels.INFO)
+        else
+          vim.notify('No active session to yeet', vim.log.levels.WARN)
+        end
+      end,
+      desc = 'Debug: murk running',
     },
     {
       '<F7>',
@@ -136,6 +170,28 @@ return {
     dap.listeners.before.event_terminated['dapui_config'] = dapui.close
     dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
+    local function find_main_go_dir_smart()
+      local Path = require 'plenary.path'
+      local current = Path:new(vim.api.nvim_buf_get_name(0)):parent()
+      local root_limit = Path:new(vim.fn.getcwd())
+
+      while current do
+        local main_go = Path:new(current, 'main.go')
+        if main_go:exists() then
+          return current:absolute()
+        end
+        if current:absolute() == root_limit:absolute() then
+          break
+        end
+        local parent = Path:new(current):parent()
+        if parent == current then
+          break
+        end
+        current = parent
+      end
+      error 'main.go not found in parents'
+    end
+
     local function find_main_go_dir()
       local Path = require 'plenary.path'
       local current = Path:new(vim.api.nvim_buf_get_name(0)):parent()
@@ -160,7 +216,7 @@ return {
         name = 'file',
         request = 'launch',
         program = function()
-          return find_main_go_dir()
+          return find_main_go_dir_smart()
         end,
         outputMode = 'remote',
       },
