@@ -127,6 +127,7 @@ return {
       -- online, please don't ask me how to install them :)
       ensure_installed = {
         'delve',
+        'js-debug-adapter', -- Node/TS debugging for the art pipeline (tools/*.mjs)
       },
     }
 
@@ -227,6 +228,27 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+
+    -- Node/TypeScript debugging (Sparkle Unicorn: Vite dev server + tools/artDir/*.mjs).
+    dap.adapters['pwa-node'] = {
+      type = 'server',
+      host = '127.0.0.1',
+      port = '${port}',
+      executable = { command = 'js-debug-adapter', args = { '${port}' } },
+    }
+    local node_configs = {
+      {
+        type = 'pwa-node',
+        request = 'launch',
+        name = 'Run current file',
+        program = '${file}',
+        cwd = '${workspaceFolder}',
+        console = 'integratedTerminal',
+      },
+    }
+    for _, ft in ipairs { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' } do
+      dap.configurations[ft] = node_configs
+    end
 
     -- vim.api.nvim_create_autocmd('BufWinEnter', {
     --   pattern = 'DAP REPL',

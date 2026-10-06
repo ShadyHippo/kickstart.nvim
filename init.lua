@@ -119,34 +119,26 @@ vim.keymap.set('n', '<A-i>', ':cprev<CR>', { desc = 'Go to the prev quick fix' }
 vim.keymap.set('n', '<A-o>', ':copen<CR>', { desc = 'Open quick fix' })
 vim.keymap.set('n', '<A-p>', ':cclose<CR>', { desc = 'Close quick fix' })
 
--- Keybinds to make split navigation easier.
---  See `:help wincmd` for a list of all window commands
---  Use CTRL+<hjkl> to switch between windows
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+-- Window navigation: CTRL+<hjkl> in normal AND insert mode, so you can move
+-- between your code and a side pane (e.g. opencode) without leaving insert.
+-- `<Cmd>` keeps the current mode (plain Ctrl+w means "delete word" in insert).
+-- NOTE: mapping Ctrl+h in insert means Ctrl+h no longer acts as Backspace
+-- (the dedicated <BS> key still does).
+for _, mode in ipairs { 'n', 'i' } do
+  vim.keymap.set(mode, '<C-h>', '<Cmd>wincmd h<CR>', { desc = 'Move focus to the left window' })
+  vim.keymap.set(mode, '<C-j>', '<Cmd>wincmd j<CR>', { desc = 'Move focus to the lower window' })
+  vim.keymap.set(mode, '<C-k>', '<Cmd>wincmd k<CR>', { desc = 'Move focus to the upper window' })
+  vim.keymap.set(mode, '<C-l>', '<Cmd>wincmd l<CR>', { desc = 'Move focus to the right window' })
+end
 
---  Use CTRL+Alt+<hjkl> to resize between windows
+-- Resize windows with CTRL+Alt+<hjkl> (8 cells at a time)
 vim.keymap.set('n', '<C-A-h>', '8<C-w><', { desc = 'Shrink window width' })
 vim.keymap.set('n', '<C-A-l>', '8<C-w>>', { desc = 'Increase window width' })
 vim.keymap.set('n', '<C-A-j>', '8<C-w>-', { desc = 'Shrink window height' })
 vim.keymap.set('n', '<C-A-k>', '8<C-w>+', { desc = 'Increase window height' })
--- vim.keymap.set('n', '<leader>h', '<C-w><C-h>', { desc = 'Move focus to the left window' })
--- vim.keymap.set('n', '<leader>l', '<C-w><C-l>', { desc = 'Move focus to the right window' })
--- vim.keymap.set('n', '<leader>j', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
--- vim.keymap.set('n', '<leader>k', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
 vim.keymap.set('n', '<C-A-_>', '<C-w>_', { desc = 'maximize current window width' })
 vim.keymap.set('n', '<C-A-|>', '<C-w>|', { desc = 'maximize window height' })
 vim.keymap.set('n', '<C-A-=>', '<C-w>=', { desc = 'equalize windows' })
-
--- vim.keymap.set('n', '<leader>h', '<C-w><C-h>', { desc = 'Move focus to the left window' })
--- vim.keymap.set('n', '<leader>l', '<C-w><C-l>', { desc = 'Move focus to the right window' })
--- vim.keymap.set('n', '<leader>j', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
--- vim.keymap.set('n', '<leader>k', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
---
---
 
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
@@ -161,7 +153,6 @@ vim.keymap.set('n', '<C-u>', '<C-u>zz', { desc = 'scroll up half screen center c
 vim.keymap.set('n', 'n', 'nzzzv', { desc = 'next in search centered' })
 vim.keymap.set('n', 'N', 'Nzzzv', { desc = 'next in search centered' })
 
-vim.keymap.set('n', 's', '<nop>', { desc = "don't do anything with s (so I can do surround)" })
 vim.keymap.set('n', 's', '<nop>', { desc = "don't do anything with s (so I can do surround)" })
 
 -- [[ Basic Autocommands ]]
@@ -196,25 +187,6 @@ require('lazy').setup({
     config = true,
   },
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-  {
-    'tpope/vim-dadbod', -- sqlite / db support
-    dependencies = {
-      'kristijanhusak/vim-dadbod-ui',
-      'kristijanhusak/vim-dadbod-completion',
-    },
-    init = function()
-      vim.g.dbs = {
-        acnh = 'sqlite:///home/hippo/acnh/acnh.db',
-      }
-
-      vim.g.db_ui_force_echo_notifications = 1
-      vim.g.db_ui_use_nerd_fonts = 1
-      vim.g.db_ui_save_location = vim.fn.stdpath 'config' .. '/db_queries'
-
-      vim.keymap.set('v', '<F5>', ':DB<CR>', { desc = 'Execute highlighted query' })
-      vim.keymap.set('n', '<F5>', ':DB<CR>', { desc = 'Execute hovered query' })
-    end,
-  },
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -306,7 +278,6 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
       },
     },
   },
@@ -452,10 +423,9 @@ require('lazy').setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
-          vim.keymap.set('n', '<leader>h', function()
-            vim.lsp.buf.hover()
-          end, { remap = false })
-          -- map('<leader>h', vim.lsp.buf.hover(), '[H]over')
+          -- Buffer-local LSP hover. (The old `<leader>h` = "Git [H]unk" which-key group is
+          -- gone: gitsigns' recommended keymaps aren't loaded and it clashed with this.)
+          map('<leader>h', vim.lsp.buf.hover, '[H]over')
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
           map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
@@ -552,28 +522,6 @@ require('lazy').setup({
         end,
       })
 
-      -- Autocommand for SQL files to enable Dadbod completion
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = { 'sql', 'mysql', 'plsql' },
-        callback = function()
-          require('cmp').setup.buffer {
-            sources = {
-              { name = 'vim-dadbod-completion' },
-              { name = 'buffer' },
-            },
-          }
-          -- Look for the "-- db: name" comment in the first 5 lines
-          local lines = vim.api.nvim_buf_get_lines(0, 0, 5, false)
-          for _, line in ipairs(lines) do
-            local db_name = line:match '%-%-%s*db:%s*(%w+)'
-            if db_name and vim.g.dbs and vim.g.dbs[db_name] then
-              vim.b.db = vim.g.dbs[db_name]
-              return
-            end
-          end
-        end,
-      })
-
       -- Change diagnostic symbols in the sign column (gutter)
       -- if vim.g.have_nerd_font then
       local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
@@ -613,12 +561,16 @@ require('lazy').setup({
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
-        -- Some languages (like typescript) have entire language plugins that can be useful:
-        --    https://github.com/pmizio/typescript-tools.nvim
-        --
-        -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
-        --
+        -- TypeScript / JavaScript — Sparkle Unicorn (PixiJS + Vite, strict TS).
+        -- NOTE: the project's `typescript` is the native v7 compiler, which ships no
+        -- `tsserver.js`. Leave `typescript.tsdk` unset so the server uses its own
+        -- bundled tsserver; `npm run typecheck` stays the source of truth.
+        ts_ls = {
+          settings = {
+            typescript = { inlayHints = { parameterNames = { enabled = 'literals' } } },
+            javascript = { inlayHints = { parameterNames = { enabled = 'literals' } } },
+          },
+        },
 
         lua_ls = {
           -- cmd = { ... },
@@ -814,7 +766,6 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
-          { name = 'vim-dadbod-completion' },
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
@@ -881,7 +832,29 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'go', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'sql', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'go',
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'sql',
+        'vim',
+        'vimdoc',
+        -- Sparkle Unicorn: TS/JS game code, JSON atlases/configs, YAML workflows, CSS
+        'typescript',
+        'tsx',
+        'javascript',
+        'json',
+        'yaml',
+        'css',
+        'regex',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -968,7 +941,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
@@ -995,6 +968,11 @@ require('lazy').setup({
     },
   },
 })
+
+-- Neovim 0.12 compat shim for nvim-treesitter master (fixes markdown/bash/etc.
+-- injection errors). Loaded here so it runs after nvim-treesitter is set up.
+-- Remove this line and `lua/custom/treesitter_compat.lua` to drop the shim.
+require 'custom.treesitter_compat'
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
